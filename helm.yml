@@ -1,0 +1,45 @@
+---
+# file: ${course}.yml
+- hosts: 
+  - all
+  tasks:
+    - name: Display all variables/facts known for a host
+      debug:
+        var: hostvars[inventory_hostname]
+      tags: 
+        - never
+        - debug_info
+    - name: apt update
+      apt:
+        update_cache: yes
+      changed_when: false
+      when: ansible_facts['os_family'] == 'Debian'
+    - name: install first wave of packages
+      apt:
+        name: extrepo
+        update_cache: yes
+    - name: enable repository for docker-ce
+      command:
+        cmd: extrepo enable docker-ce
+        creates: /var/lib/extrepo/keys/docker-ce.asc
+    - name: install docker-ce
+      apt:
+        name: docker-ce
+        update_cache: yes
+    - name: configure docker to use mirror
+      copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          #{
+          #  "registry-mirrors": ["http://$MIRROR_IP:5001", "https://mirror.gcr.io" ],
+          #  "insecure-registries" : ["$MIRROR_IP:5001", "cnbc-registry:5000"] 
+          #}
+    - name: mkdir k3d
+      file:
+        path: /root/k3d
+        state: directory
+    - name: install k3d with evil curl to root
+      shell:
+        cmd: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+        chdir: /root/k3d
+        creates: /usr/local/bin/k3d
