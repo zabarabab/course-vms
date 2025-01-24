@@ -1,1 +1,6 @@
 *.inventory
+hetzner_vm_create.conf
+*.authorized_keys
+*.known_hosts
+*.server_list
+*.zone
