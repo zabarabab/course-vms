@@ -1,0 +1,276 @@
+#!/bin/bash
+
+set -eo pipefail
+set -x
+
+if test -f hetzner_vm_create.conf; then
+  source hetzner_vm_create.conf
+else
+  cat <<FAIL
+  Konfigurationsdatei hetzner_vm_create.conf fehlt
+  kopiere hetzner_vm_create.conf.template nach hetzner_vm_create.conf
+  und bearbeite hetzner_vm_create.conf
+FAIL
+  exit 1
+fi
+
+# usernames must not contain characters not allowed in domain names
+# Keine Punkte im Hostnamen, Maximal 14 Zeichen für Hostnamen verwenden!
+
+#users='alexander andreas thorsten ansgar johann martin niklas sven natureshadow'
+
+if test -z "$context"; then
+  echo context darf nicht leer sein
+  exit 1
+fi
+if hcloud context list -o noheader -o columns=name| grep -Fxq "$context"; then
+  echo context "$context" already exists
+else
+  hcloud context create "$context"
+fi
+if test "$(hcloud context active)" = "$context"; then
+  echo context "$context" is already active
+else
+  hcloud context use $context
+fi
+if test -z "$users"; then
+  echo users darf nicht leer sein
+  exit 1
+fi
+
+hc_types=${hc_types:-cax11}
+ip_range=${ip_range:-10.97.7.0/24}
+network_name=${network_name:-network-01}
+images=${images:-debian-12}
+
+#volumes='10 10 10' # 3 additional volumes with 10GB each
+volumes=${volumes:-}
+admins=${admins:-ingo_wichmann}
+ssh_password="$(pwgen -B 10 1)"
+#enable_cockpit=yes # only debian and rocky
+rdns_domain='lxht.de' # TODO: create zone entries
+
+#TODO: 
+#https://community.hetzner.com/tutorials/basic-cloud-config
+
+# hcloud server create --user-data-from-file stringArray
+
+#users:
+#  - name: holu
+#    groups: users, admin
+#    sudo: ALL=(ALL) NOPASSWD:ALL
+#    shell: /bin/bash
+#    ssh_authorized_keys:
+#      - <public_ssh_key>
+
+#hcloud image list -o columns=name
+# alma-8
+# alma-9
+# centos-7
+# centos-stream-8
+# centos-stream-9
+# collab-tools
+# debian-10
+# debian-11
+# docker-ce
+# fedora-37
+# fedora-38
+# gitlab
+# go
+# jitsi
+# lamp
+# nextcloud
+# owncast
+# photoprism
+# prometheus-grafana
+# rocky-8
+# rocky-9
+# ruby
+# rustdesk
+# ubuntu-18.04
+# ubuntu-20.04
+# ubuntu-22.04
+# wireguard
+# wordpress
+
+# hcloud server-type list
+#ID    NAME    CORES   MEMORY     DISK     STORAGE TYPE
+#22    cpx11   2       2.0 GB     40 GB    local
+#23    cpx21   3       4.0 GB     80 GB    local
+#24    cpx31   4       8.0 GB     160 GB   local
+#25    cpx41   8       16.0 GB    240 GB   local
+#26    cpx51   16      32.0 GB    360 GB   local
+#45    cax11   2       4.0 GB     40 GB    local
+#93    cax21   4       8.0 GB     80 GB    local
+#94    cax31   8       16.0 GB    160 GB   local
+#95    cax41   16      32.0 GB    320 GB   local
+#96    ccx13   2       8.0 GB     80 GB    local
+#97    ccx23   4       16.0 GB    160 GB   local
+#98    ccx33   8       32.0 GB    240 GB   local
+#99    ccx43   16      64.0 GB    360 GB   local
+#100   ccx53   32      128.0 GB   600 GB   local
+#101   ccx63   48      192.0 GB   960 GB   local
+#104   cx22    2       4.0 GB     40 GB    local
+#105   cx32    4       8.0 GB     80 GB    local
+#106   cx42    8       16.0 GB    160 GB   local
+#107   cx52    16      32.0 GB    320 GB   local
+
+if ! test -f "${context}.authorized_keys"; then
+  cat <<FAIL
+  Datei "${context}.authorized_keys" fehlt
+  Darf auch leer sein.
+FAIL
+  exit 1
+fi
+
+for admin in $admins; do 
+  if ! test -f "${admin}.authorized_keys"; then
+    echo Datei "${admin}.authorized_keys" fehlt
+    exit 1
+  fi
+done
+
+known_hosts_file=${context}.known_hosts
+ssh_options="-o StrictHostKeyChecking=no -o UpdateHostKeys=no -o UserKnownHostsFile=$known_hosts_file"
+for admin in $admins; do 
+  if hcloud ssh-key list -o noheader -o columns=name | grep -Fxq "$admin"; then
+    echo key for "$admin" already exists
+  else
+    hcloud ssh-key create --name $admin --public-key-from-file ./$admin.authorized_keys
+  fi
+  if grep -Fxqf $admin.authorized_keys $context.authorized_keys; then
+    echo key for "$admin" already in "$context.authorized_keys"
+  else
+    cat $admin.authorized_keys >> $context.authorized_keys
+  fi
+done
+
+if hcloud network list -o noheader -o columns=name | grep -Fxq "$network_name"; then
+  echo network "$network_name" already exists
+else
+  hcloud network create --name $network_name --ip-range $ip_range
+  hcloud network add-subnet $network_name --type cloud --network-zone eu-central --ip-range $ip_range
+fi
+
+declare -A servers
+while read server; do 
+  servers["$server"]=1; 
+done < <(hcloud server list -o noheader -o columns=name)
+declare -A volumes
+while read volume; do 
+  volumes["$volume"]=1; 
+done < <(hcloud volume list -o noheader -o columns=name)
+for user in $users; do
+  i=1
+  for hc_type in $hc_types; do
+    for image in $images; do
+      server="${user/_/-}-$((i++))"
+      if test "${servers[$server]}" = 1; then # TODO: does not work with set -u
+        echo server "$server" already exists
+      else
+        hcloud server create --image $image --name "${server}" --type $hc_type --network $network_name --location hel1 --ssh-key ./$admin.authorized_keys
+      fi
+      if test -n "volumes"; then
+        v=1
+        for vol_size in $volumes; do
+          volume="${user/_/-}-$((v++))"
+          if test "${volumes[$volume]}" = 1; then
+            echo volume "$volume" already exists
+          else
+            hcloud volume create --size $vol_size --name "$volume" --server "${server}"
+          fi
+        done
+      fi
+      if test -n "$rdns_domain"; then
+        hcloud server set-rdns -r "${server}.${rdns_domain}" "${server}"
+        hcloud server set-rdns -r "${server}.${rdns_domain}" -i $(hcloud server ip -6 "${server}") "${server}"
+      fi
+    done
+  done
+  #v=1
+  #for vol_size in 10 10 10; do
+  #  echo hcloud volume create --size $vol_size --name "${user/_/-}-$((v++))" --server "${user/_/-}-1"
+  #done
+done
+
+while read ipv4 ipv6 name; do 
+  if test -n "$rdns_domain"; then
+    echo $ipv4 ${ipv6/\/64/1} $name.$rdns_domain; 
+  else
+    echo $ipv4 ${ipv6/\/64/1} $name; 
+  fi
+done < <(hcloud server list -o columns=ipv4,ipv6,name) | column -t | tee "${context}.server_list"
+
+if test -n "$rdns_domain"; then
+  while read ipv4 ipv6 name; do 
+    echo $name. A $ipv4; 
+  done < <(tail -n +2 "${context}.server_list")  | column -t > "${context}.zone"
+fi
+
+if test -n "$rdns_domain"; then
+  while read ipv4 ipv6 name; do 
+    echo $name. AAAA ${ipv6/\/64/1}; 
+  done < <(tail -n +2 "${context}.server_list")  | column -t >> "${context}.zone"
+fi
+
+if test -n "$rdns_domain"; then
+  cat > "${context}.inventory" <<-INVENTORY
+	[${context}:vars]
+	ansible_ssh_common_args='-o UserKnownHostsFile=${context}.known_hosts'
+	
+	[$context]
+INVENTORY
+  while read ipv4 ipv6 name; do 
+    echo "$ipv4 servername=$name"
+  done < <(tail -n +2 "${context}.server_list")  | column -t >> "${context}.inventory"
+fi
+
+# TODO: this loop shoud be moved to ansible
+hcloud server list -o noheader -o columns=ipv4 | while read server; do 
+  count=10 # Hetzner verspricht, dass die VMs in 10 Sekunden starten, afair
+  while test "$((count--))" -ge 1; do
+    #ping -c 1 "$server" && break
+    nc -z "$server" 22 && break
+    echo Wait $count more times for port 22 to open on $server
+    sleep 1
+  done
+  ssh root@$server $ssh_options 'cat >> .ssh/authorized_keys' < "${context}.authorized_keys"
+  if test "$enable_cockpit" = 'yes'; then
+    case "$image" in
+      debian-*)
+        echo 'enable cockpit'
+        ssh root@$server $ssh_options apt update
+        ssh root@$server $ssh_options apt install -y cockpit
+      ;;
+      rocky-*)
+        echo 'enable cockpit'
+        ssh root@$server $ssh_options dnf install -y cockpit
+      ;;
+      *)
+    esac
+    ssh root@$server $ssh_options <<-SSH
+	echo > /etc/cockpit/disallowed-users
+	systemctl enable --now cockpit.socket
+	systemctl restart cockpit.service
+	SSH
+  fi
+  if test -n "$ssh_password"; then
+    echo "root:$ssh_password" | ssh root@$server $ssh_options 'chpasswd'
+    case "$image" in
+      debian-*|ubuntu-*)
+        echo 'permit ssh root login'
+        echo 'PermitRootLogin yes' | ssh root@$server $ssh_options 'cat > /etc/ssh/sshd_config.d/permit_root_login.conf'
+        ssh -n root@$server $ssh_options 'systemctl reload-or-try-restart ssh.service'
+      ;;
+      rocky-*|centos-stream-*)
+        echo 'permit ssh root login'
+        ssh -n root@$server $ssh_options "sed -ri 's/^PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config"
+        ssh -n root@$server $ssh_options 'test -f /etc/ssh/sshd_config.d/50-cloud-init.conf && rm -v /etc/ssh/sshd_config.d/50-cloud-init.conf'
+        ssh -n root@$server $ssh_options 'systemctl reload-or-try-restart sshd.service'
+      ;;
+    esac
+  fi
+done
+if test -n "$ssh_password"; then
+  echo "SSH root-Passwort: $ssh_password"
+fi

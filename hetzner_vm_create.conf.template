@@ -1,0 +1,115 @@
+# Template for hetzner_vm_create.conf
+
+context=
+# darf nicht leer sein
+# Beispiel:
+# context=Debian_Administration_20241125_onsite
+
+users=
+# darf nicht leer sein
+# usernames must not contain characters not allowed in domain names
+# Keine Punkte im Hostnamen, Maximal 14 Zeichen für Hostnamen verwenden!
+# Beispiel:
+# users='frank thomas mia marie'
+
+# images='debian-12'
+# Default: debian-12
+# Beispiel: 'debian-12 ubuntu-24.04'
+# see 'hcloud image list' for a complete list
+
+# hc_types=cax11
+# Default: cax11
+# Beispiel: 'cax11 cax21'
+# see 'hcloud server-type list' for a complete list
+
+# Anzahl der VMs die angelegt ist Anzahl users * Anzahl hc_types * Anzahl images
+
+# network_name='network-01'
+# Default: network-01
+
+# ip_range='10.97.7.0/24'
+# Default: 10.97.7.0/24
+
+# volumes=''
+# leer lassen, falls kein zusätzliches Volume pro VM benötigt wird
+# Beispiel:
+# volumes='10 10 10' # 3 additional volumes with 10GB each
+
+# admins='ingo_wichmann'
+
+# hcloud server-type list:
+# NAME    CORES   MEMORY     DISK     STORAGE TYPE
+# cpx11   2       2.0 GB     40 GB    local
+# cpx21   3       4.0 GB     80 GB    local
+# cpx31   4       8.0 GB     160 GB   local
+# cpx41   8       16.0 GB    240 GB   local
+# cpx51   16      32.0 GB    360 GB   local
+# cax11   2       4.0 GB     40 GB    local
+# cax21   4       8.0 GB     80 GB    local
+# cax31   8       16.0 GB    160 GB   local
+# cax41   16      32.0 GB    320 GB   local
+# ccx13   2       8.0 GB     80 GB    local
+# ccx23   4       16.0 GB    160 GB   local
+# ccx33   8       32.0 GB    240 GB   local
+# ccx43   16      64.0 GB    360 GB   local
+# ccx53   32      128.0 GB   600 GB   local
+# ccx63   48      192.0 GB   960 GB   local
+# cx22    2       4.0 GB     40 GB    local
+# cx32    4       8.0 GB     80 GB    local
+# cx42    8       16.0 GB    160 GB   local
+# cx52    16      32.0 GB    320 GB   local
+
+# hcloud image list:
+# TYPE     NAME                 DESCRIPTION          DISK SIZE
+# system   ubuntu-20.04         Ubuntu 20.04         5 GB     
+# app      lamp                 lamp                 40 GB    
+# app      wordpress            wordpress            40 GB    
+# app      jitsi                jitsi                40 GB    
+# app      nextcloud            nextcloud            40 GB    
+# app      docker-ce            docker-ce            40 GB    
+# app      gitlab               gitlab               40 GB    
+# system   debian-11            Debian 11            5 GB     
+# system   rocky-8              Rocky Linux 8        5 GB     
+# system   centos-stream-9      CentOS Stream 9      5 GB     
+# system   ubuntu-22.04         Ubuntu 22.04         5 GB     
+# app      prometheus-grafana   prometheus-grafana   40 GB    
+# system   rocky-9              Rocky Linux 9        5 GB     
+# app      wireguard            wireguard            40 GB    
+# app      owncast              owncast              40 GB    
+# app      photoprism           photoprism           40 GB    
+# app      rustdesk             rustdesk             40 GB    
+# system   centos-stream-9      CentOS Stream 9      5 GB     
+# system   debian-11            Debian 11            5 GB     
+# system   rocky-8              Rocky Linux 8        5 GB     
+# system   rocky-9              Rocky Linux 9        5 GB     
+# system   ubuntu-20.04         Ubuntu 20.04         5 GB     
+# system   ubuntu-22.04         Ubuntu 22.04         5 GB     
+# system   alma-8               AlmaLinux 8          5 GB     
+# system   alma-9               AlmaLinux 9          5 GB     
+# app      jitsi                jitsi                40 GB    
+# app      owncast              owncast              40 GB    
+# app      rustdesk             rustdesk             40 GB    
+# app      nextcloud            nextcloud            40 GB    
+# app      lamp                 lamp                 40 GB    
+# app      wordpress            wordpress            40 GB    
+# app      wireguard            wireguard            40 GB    
+# app      docker-ce            docker-ce            40 GB    
+# app      prometheus-grafana   prometheus-grafana   40 GB    
+# app      photoprism           photoprism           40 GB    
+# app      gitlab               gitlab               40 GB    
+# system   alma-8               AlmaLinux 8          5 GB     
+# system   alma-9               AlmaLinux 9          5 GB     
+# system   debian-12            Debian 12            5 GB     
+# system   debian-12            Debian 12            5 GB     
+# system   fedora-40            Fedora 40            5 GB     
+# system   fedora-40            Fedora 40            5 GB     
+# system   ubuntu-24.04         Ubuntu 24.04         5 GB     
+# system   ubuntu-24.04         Ubuntu 24.04         5 GB     
+# app      coolify              coolify              40 GB    
+# app      coolify              coolify              40 GB    
+# system   fedora-41            Fedora 41            5 GB     
+# system   fedora-41            Fedora 41            5 GB     
+# system   opensuse-15          openSUSE Leap 15     5 GB     
+# system   opensuse-15          openSUSE Leap 15     5 GB     
+# system   centos-stream-10     CentOS Stream 10     5 GB     
+# system   centos-stream-10     CentOS Stream 10     5 GB     
