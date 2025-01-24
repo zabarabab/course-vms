@@ -1,0 +1,26 @@
+services:
+  mirror:
+    container_name: cnbc-mirror
+    image: registry:2
+    ports:
+      - $MIRROR_IP:5001:5001
+    environment:
+      - TZ=Europe/Berlin
+    volumes:
+      - ./cnbc-mirror.yml:/etc/docker/registry/config.yml
+      - cnbc-mirror:/var/lib/registry
+    restart: always
+  k8s:
+    container_name: cnbc-k8s
+    image: registry:2
+    ports:
+      - $MIRROR_IP:5002:5002
+    environment:
+      - TZ=Europe/Berlin
+    volumes:
+      - ./cnbc-k8s.yml:/etc/docker/registry/config.yml
+      - cnbc-k8s:/var/lib/registry
+    restart: always
+volumes:
+  cnbc-mirror:
+  cnbc-k8s:

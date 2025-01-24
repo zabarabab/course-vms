@@ -9,6 +9,9 @@
       tags: 
         - never
         - debug_info
+    - name: Set architecture specific variables
+      set_fact:
+        arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
     - name: apt update
       apt:
         update_cache: yes
@@ -24,16 +27,52 @@
         creates: /var/lib/extrepo/keys/docker-ce.asc
     - name: install docker-ce
       apt:
-        name: docker-ce
+        name: 
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+          - docker-buildx-plugin
         update_cache: yes
+    - name: MIRROTOIP env
+      shell:
+        executable: /bin/bash
+        cmd: echo "export MIRROR_IP=$(/sbin/ip -o -4 addr list enp7s0 | awk '{print $4}' | cut -d/ -f1)" >>~/.bashrc
     - name: configure docker to use mirror
+      shell:
+        executable: /bin/bash
+        cmd: |
+          cat >/etc/docker/daemon.json <<EOF
+          {
+            "registry-mirrors": ["http://$MIRROR_IP:5001", "https://mirror.gcr.io" ],
+            "insecure-registries" : ["$MIRROR_IP:5001", "cnbc-registry:5000"] 
+          }
+          EOF
+    - name: restart docker
+      service:
+        name: docker
+        state: restarted
+    - name: mkdir registry
+      file:
+        path: /root/registry
+        state: directory
+    - name: configure docker compose mirror
       copy:
-        dest: /etc/docker/daemon.json
-        content: |
-          #{
-          #  "registry-mirrors": ["http://$MIRROR_IP:5001", "https://mirror.gcr.io" ],
-          #  "insecure-registries" : ["$MIRROR_IP:5001", "cnbc-registry:5000"] 
-          #}
+        dest: /root/registry/docker-compose.yml
+        src: registry/docker-compose.yml
+    - name: cnbc-mirror 
+      copy:
+        dest: /root/registry/cnbc-mirror.yml
+        src: registry/cnbc-mirror.yml
+    - name: cnbc-mk8s 
+      copy:
+        dest: /root/registry/cnbc-k8s.yml
+        src: registry/cnbc-k8s.yml
+    - name: install mirrors
+      shell:
+        executable: /bin/bash
+        cmd: docker compose up -d --wait --wait-timeout=60
+        chdir: /root/registry
     - name: mkdir k3d
       file:
         path: /root/k3d
@@ -43,3 +82,70 @@
         cmd: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
         chdir: /root/k3d
         creates: /usr/local/bin/k3d
+    - name: start cluster
+      shell:
+        executable: /bin/bash
+        cmd: |
+          {% raw %}
+          CLUSTER=cnbc-$(docker info -f "{{.Name}}")
+          echo 'export CLUSTER=cnbc-$(docker info -f "{{.Name}}")' >> ~/.bashrc
+          IP4=$(/sbin/ip -o -4 addr list eth0 | awk '{print $4}' | cut -d/ -f1) 
+          cat >registries.yml <<EOF 
+          mirrors:
+            docker.io:
+              endpoint:
+                - "http://$MIRROR_IP:5001"
+            registry.k8s.io:
+              endpoint:
+                - "http://$MIRROR_IP:5002"
+          EOF
+          k3d cluster create $CLUSTER \
+            --api-port 8545 \
+            -p "8580:80@loadbalancer" \
+            -p "8543:443@loadbalancer" \
+            --agents=2 \
+            --k3s-arg "--tls-san=$IP4@server:0" \
+            --k3s-arg "--disable=traefik@server:0" \
+            --registry-create cnbc-registry:$MIRROR_IP:5000 \
+            --registry-config=./registries.yml
+          echo $MIRROR_IP cnbc-registry >>/etc/hosts
+          {% endraw %}
+        chdir: /root/k3d
+        creates: /root/.kube/config
+    - name: install kubectl
+      shell:
+        executable: /bin/bash
+        cmd: |
+          KUBE_VERSION=v1.31.4
+          curl -LO https://dl.k8s.io/release/$KUBE_VERSION/bin/linux/{{ arch }}/kubectl
+          chmod +x kubectl
+          mv ./kubectl /usr/local/bin/kubectl
+        chdir: /root/k3d
+        creates: /usr/local/bin/kubectl
+    - name: kubernetes aliases
+      shell:
+        executable: /bin/bash
+        cmd: |
+          echo 'source <(kubectl completion bash)' >>~/.bashrc
+          echo 'alias k=kubectl' >>~/.bashrc && echo 'complete -o default -F __start_kubectl k' >>~/.bashrc
+          echo "alias kx='f() { [ \"\$1\" ] && kubectl config use-context \$1 || kubectl config current-context ; } ; f'" >>~/.bashrc
+          echo "alias kn='f() { [ \"\$1\" ] && kubectl config set-context --current --namespace \$1 || kubectl config view --minify | grep namespace | cut -d\" \" -f6 ; } ; f'" >>~/.bashrc
+          curl -s https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh >./kube-ps1.sh
+          mkdir -p /usr/local/opt/kube-ps1/share
+          cp kube-ps1.sh /usr/local/opt/kube-ps1/share
+          chmod +x /usr/local/opt/kube-ps1/share/kube-ps1.sh
+          echo "source /usr/local/opt/kube-ps1/share/kube-ps1.sh" >>~/.bashrc
+          echo "PS1='\$(kube_ps1)'\$PS1" >>~/.bashrc
+        chdir: /root
+        creates: /usr/local/opt/kube-ps1/share/kube-ps1.sh
+    - name: install helm
+      shell:
+        executable: /bin/bash
+        cmd: |
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+          echo "source <(helm completion bash)" >>~/.bashrc
+        chdir: /root
+        creates: /usr/local/bin/helm
+  

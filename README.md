@@ -35,3 +35,6 @@ Test access to VMs:
 Run a playbook for your course:
 `ansible-playbook -u root -i ${context}.inventory ${course}.yml`
 
+See debug facts
+
+`ansible-playbook -u root -i Helm_20250127_test.inventory helm.yml -t debug_info | more`
