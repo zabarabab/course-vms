@@ -42,6 +42,7 @@ hc_types=${hc_types:-cax11}
 ip_range=${ip_range:-10.97.7.0/24}
 network_name=${network_name:-network-01}
 images=${images:-debian-12}
+location=${location:-hel1}
 
 #volumes='10 10 10' # 3 additional volumes with 10GB each
 volumes=${volumes:-}
@@ -116,11 +117,11 @@ rdns_domain='lxht.de' # TODO: create zone entries
 #107   cx52    16      32.0 GB    320 GB   local
 
 if ! test -f "${context}.authorized_keys"; then
-  cat <<FAIL
+  touch "${context}.authorized_keys"
+  cat <<WARN
   Datei "${context}.authorized_keys" fehlt
-  Darf auch leer sein.
-FAIL
-  exit 1
+  leere Datei "${context}.authorized_keys" angelegt
+WARN
 fi
 
 for admin in $admins; do 
@@ -144,6 +145,7 @@ for admin in $admins; do
     cat $admin.authorized_keys >> $context.authorized_keys
   fi
 done
+admin_ssh_keys=$(for admin in $admins; do echo -n "--ssh-key ./${admin}.authorized_keys "; done)
 
 if hcloud network list -o noheader -o columns=name | grep -Fxq "$network_name"; then
   echo network "$network_name" already exists
@@ -168,7 +170,7 @@ for user in $users; do
       if test "${servers[$server]}" = 1; then # TODO: does not work with set -u
         echo server "$server" already exists
       else
-        hcloud server create --image $image --name "${server}" --type $hc_type --network $network_name --location hel1 --ssh-key ./$admin.authorized_keys
+        hcloud server create --image $image --name "${server}" --type $hc_type --network $network_name --location $location $admin_ssh_keys
       fi
       if test -n "volumes"; then
         v=1

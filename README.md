@@ -6,7 +6,7 @@ for a linuxhotel training, please ask the office
 
 ## copy a read-write authentication token
 
-Replace <id> and go to: https://console.hetzner.cloud/projects/<id>/security/tokens
+Replace ${context} and go to: https://console.hetzner.cloud/projects/${context}/security/tokens
 
 ## edit configuration for the course
 
@@ -27,7 +27,7 @@ at first run for a new course you have to enter the authentication token
 ## TODO: configure VMs with ansible
 
 test ssh access:
-`ssh -o 'UserKnownHostsFile=${context}.known_hosts' root@${ip} hostname`
+`ssh -o UserKnownHostsFile=${context}.known_hosts root@${ip} hostname`
 
 Test access to VMs:
 `ansible -u root -i ${context}.inventory $context -a 'hostname'`
