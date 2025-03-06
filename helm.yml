@@ -44,8 +44,7 @@
         cmd: |
           cat >/etc/docker/daemon.json <<EOF
           {
-            "registry-mirrors": ["http://$MIRROR_IP:5001", "https://mirror.gcr.io" ],
-            "insecure-registries" : ["$MIRROR_IP:5001", "cnbc-registry:5000"] 
+            "registry-mirrors": ["https://registry.lab.linuxhotel.de/Nb72bNErqXLNFAHdeQsFzhwjJYiQMsoZ"]
           }
           EOF
     - name: restart docker
@@ -94,7 +93,7 @@
           mirrors:
             docker.io:
               endpoint:
-                - "http://$MIRROR_IP:5001"
+                - "https://registry.lab.linuxhotel.de/Nb72bNErqXLNFAHdeQsFzhwjJYiQMsoZ"
             registry.k8s.io:
               endpoint:
                 - "http://$MIRROR_IP:5002"
