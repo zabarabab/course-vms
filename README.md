@@ -46,9 +46,16 @@ docker build -t hcloud .
 docker run -it --rm -v ~/.ssh/id_linuxhotel_ed25519:/root/.ssh/id_ed25519 -v $(pwd):/root/app -w /root/app hcloud /bin/bash
 eval ssh-agent &
 export SSH_AUTH_SOCK=/tmp/ssh-9U374MXH4sgb/agent.8 
-ssh-add ~/.ssh/.ssh/id_ed25519
+ssh-add ~/.ssh/id_ed25519
 ./hetzner_vm_create
+# TOKEN via Hetzner Condole besorgen!!
 ansible-playbook -u root -i Helm_20250127_test.inventory helm.yml
 ssh root@<ip>
-
+kubectl get nodes
+exit
+exit
 ```
+
+## API TOKEN
+
+![Create API TOKEN](./images/API-TOKEN.png) 
