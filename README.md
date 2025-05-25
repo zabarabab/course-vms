@@ -18,6 +18,7 @@ Replace ${context} and go to: https://console.hetzner.cloud/projects/${context}/
 ## run hetzner_vm_create
 
 `./hetzner_vm_create`
+
 at first run for a new course you have to enter the authentication token
 
 ## optional: DNS
@@ -29,12 +30,15 @@ add records from `${context}.zone` to DNS
 `source hetzner_vm_create.conf`
 
 test ssh access to one VM:
+
 `ssh -o UserKnownHostsFile=${context}.known_hosts root@${ip} hostname`
 
 Test ansible access to all VMs:
+
 `ansible -u root -i ${context}.inventory $context -a 'hostname'`
 
 Run a playbook for your course:
+
 `ansible-playbook -u root -i ${context}.inventory ${course}.yml`
 
 optional: see debug facts
