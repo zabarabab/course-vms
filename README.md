@@ -1,10 +1,8 @@
 # course-vms
 
-## Get access to a hetzner cloud project
-
-for a linuxhotel training, please ask the office
-
 ## copy a read-write authentication token
+
+Get access to a hetzner cloud project. For a Linuxhotel training, please ask the office.
 
 Replace ${context} and go to: https://console.hetzner.cloud/projects/${context}/security/tokens
 
@@ -22,22 +20,26 @@ Replace ${context} and go to: https://console.hetzner.cloud/projects/${context}/
 `./hetzner_vm_create`
 at first run for a new course you have to enter the authentication token
 
-## optional: add record from `${context}.zone` to DNS
+## optional: DNS
 
-## TODO: configure VMs with ansible
+add records from `${context}.zone` to DNS
 
-test ssh access:
+## configure VMs with ansible
+
+`source hetzner_vm_create.conf`
+
+test ssh access to one VM:
 `ssh -o UserKnownHostsFile=${context}.known_hosts root@${ip} hostname`
 
-Test access to VMs:
+Test ansible access to all VMs:
 `ansible -u root -i ${context}.inventory $context -a 'hostname'`
 
 Run a playbook for your course:
 `ansible-playbook -u root -i ${context}.inventory ${course}.yml`
 
-See debug facts
+optional: see debug facts
 
-`ansible-playbook -u root -i Helm_20250127_test.inventory helm.yml -t debug_info | more`
+`ansible-playbook -u root -i ${context}.inventory ${course}.yml -t debug_info | more`
 
 ## docker
 
