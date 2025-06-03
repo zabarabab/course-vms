@@ -1,5 +1,14 @@
 # course-vms
 
+## Install dependencies
+
+apt install hcloud-cli pwgen
+
+## Assumptions
+
+The authorized keys private key file for admin users is expected to be in the normal ssh location.
+This could get in your way if you test this isolated or if you use nonstandard paths.
+
 ## copy a read-write authentication token
 
 Get access to a hetzner cloud project. For a Linuxhotel training, please ask the office.
