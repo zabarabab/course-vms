@@ -44,7 +44,8 @@
         cmd: |
           cat >/etc/docker/daemon.json <<EOF
           {
-            "registry-mirrors": ["https://registry.lab.linuxhotel.de/Nb72bNErqXLNFAHdeQsFzhwjJYiQMsoZ"]
+            "registry-mirrors": ["https://registry.lab.linuxhotel.de/Nb72bNErqXLNFAHdeQsFzhwjJYiQMsoZ"],
+            "insecure-registries" : [ "$MIRROR_IP:5002", "$MIRROR_IP:5000","cnbc-registry:5000"] 
           }
           EOF
     - name: restart docker
