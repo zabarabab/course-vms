@@ -92,6 +92,9 @@
           IP4=$(/sbin/ip -o -4 addr list eth0 | awk '{print $4}' | cut -d/ -f1) 
           cat >registries.yml <<EOF 
           mirrors:
+            $MIRROR_IP:5000:
+              endpoint:
+                - "http://$MIRROR_IP:5000"
             docker.io:
               endpoint:
                 - "https://registry.lab.linuxhotel.de/Nb72bNErqXLNFAHdeQsFzhwjJYiQMsoZ"
