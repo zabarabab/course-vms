@@ -16,6 +16,10 @@ users=
 # Default: debian-12
 # Beispiel: 'debian-12 ubuntu-24.04'
 # see 'hcloud image list' for a complete list
+# If you spawn ARM machines, then the image alias fails.
+# You need to use the numeric IDs.
+# debian-12 for ARM is 114690389.
+# If you hcloud image list, the bigger number is usually the one for ARM.
 
 # hc_types=cax11
 # Default: cax11
