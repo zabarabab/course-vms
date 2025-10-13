@@ -97,7 +97,7 @@
                 - "http://$MIRROR_IP:5000"
             docker.io:
               endpoint:
-                - "https://registry.lab.linuxhotel.de/Nb72bNErqXLNFAHdeQsFzhwjJYiQMsoZ"
+                - "https://registry.lab.linuxhotel.de/UPNjKfwQvMDgWo4sC4iQezc5xTDdfu2nC"
             registry.k8s.io:
               endpoint:
                 - "http://$MIRROR_IP:5002"
