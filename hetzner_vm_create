@@ -47,9 +47,14 @@ location=${location:-hel1}
 #volumes='10 10 10' # 3 additional volumes with 10GB each
 volumes=${volumes:-}
 admins=${admins:-ingo_wichmann}
-ssh_password="$(pwgen -B 10 1)"
 #enable_cockpit=yes # only debian and rocky
 rdns_domain='lxht.de' # TODO: create zone entries
+if test -f "$context.password"; then
+  ssh_password="$(cat $context.password)"
+else
+  ssh_password="$(pwgen -B 10 1)"
+  echo -n "$ssh_password" > "$context.password"
+fi
 
 #TODO: 
 #https://community.hetzner.com/tutorials/basic-cloud-config

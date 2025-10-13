@@ -4,3 +4,4 @@ hetzner_vm_create.conf
 *.known_hosts
 *.server_list
 *.zone
+*.password
