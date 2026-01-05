@@ -41,7 +41,7 @@ fi
 hc_types=${hc_types:-cax11}
 ip_range=${ip_range:-10.97.7.0/24}
 network_name=${network_name:-network-01}
-images=${images:-debian-12}
+images=${images:-debian-13}
 location=${location:-hel1}
 
 #volumes='10 10 10' # 3 additional volumes with 10GB each
