@@ -23,7 +23,7 @@ if test -z "$context"; then
   echo context darf nicht leer sein
   exit 1
 fi
-if hcloud context list -o noheader -o columns=name| grep -Fxq "$context"; then
+if hcloud context list -o noheader -o columns=name| grep -Exq "\s*$context\s*"; then
   echo context "$context" already exists
 else
   hcloud context create "$context"
@@ -139,7 +139,7 @@ done
 known_hosts_file=${context}.known_hosts
 ssh_options="-o StrictHostKeyChecking=no -o UpdateHostKeys=no -o UserKnownHostsFile=$known_hosts_file"
 for admin in $admins; do 
-  if hcloud ssh-key list -o noheader -o columns=name | grep -Fxq "$admin"; then
+  if hcloud ssh-key list -o noheader -o columns=name | grep -Exq "\s*$admin\s*"; then
     echo key for "$admin" already exists
   else
     hcloud ssh-key create --name $admin --public-key-from-file ./$admin.authorized_keys
@@ -152,7 +152,7 @@ for admin in $admins; do
 done
 admin_ssh_keys=$(for admin in $admins; do echo -n "--ssh-key ./${admin}.authorized_keys "; done)
 
-if hcloud network list -o noheader -o columns=name | grep -Fxq "$network_name"; then
+if hcloud network list -o noheader -o columns=name | grep -Exq "\s*$network_name\s*"; then
   echo network "$network_name" already exists
 else
   hcloud network create --name $network_name --ip-range $ip_range
@@ -161,10 +161,12 @@ fi
 
 declare -A servers
 while read server; do 
+  test -z "$server" && continue
   servers["$server"]=1; 
 done < <(hcloud server list -o noheader -o columns=name)
 declare -A volumes
 while read volume; do 
+  test -z "$volume" && continue
   volumes["$volume"]=1; 
 done < <(hcloud volume list -o noheader -o columns=name)
 for user in $users; do
