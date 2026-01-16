@@ -183,10 +183,10 @@ for user in $users; do
         v=1
         for vol_size in $volumes; do
           volume="${user/_/-}-$((v++))"
-          if test "${volumes[$volume]}" = 1; then
-            echo volume "$volume" already exists
+          if test "${volumes[$user-$volume]}" = 1; then
+            echo volume "$user-volume" already exists
           else
-            hcloud volume create --size $vol_size --name "$volume" --server "${server}"
+            hcloud volume create --size $vol_size --name "$user-$volume" --server "${server}"
           fi
         done
       fi
