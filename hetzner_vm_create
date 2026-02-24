@@ -142,7 +142,15 @@ for admin in $admins; do
   if hcloud ssh-key list -o noheader -o columns=name | grep -Exq "\s*$admin\s*"; then
     echo key for "$admin" already exists
   else
-    hcloud ssh-key create --name $admin --public-key-from-file ./$admin.authorized_keys
+    {
+      IFS=$'\n' read -r -d '' hcloud_stderr;
+      IFS=$'\n' read -r -d '' hcloud_stdout;
+    } < <((printf '\0%s\0' "$(hcloud ssh-key create --name $admin --public-key-from-file ./$admin.authorized_keys)" 1>&2) 2>&1)
+    if test -z "$hcloud_stderr"; then
+      echo "$hcloud_stdout"
+    elif [[ "$hcloud_stderr" =~ uniqueness_error ]]; then
+      echo key for "$admin" already exists
+    fi
   fi
   if grep -Fxqf $admin.authorized_keys $context.authorized_keys; then
     echo key for "$admin" already in "$context.authorized_keys"
